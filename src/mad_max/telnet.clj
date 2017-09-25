@@ -1,10 +1,83 @@
 (ns mad-max.telnet
   (:require [tenlet.server :as ts]
             [tenlet.escape :as es]
-            [mad-max.player :as p]))
-
+            [mad-max.player :as p]
+            [mad-max.bullet :as b]))
 (def x (atom 0))
 (def y (atom 0))
+
+(def players-colors [:green :yellow
+                     :blue :magenta :cyan])
+
+(def wall-color :red)
+
+(def main-color :white)
+
+(def player-char \*)
+
+(def player-starting-char \^)
+
+(def player-chars {:arrow-down \v
+                   :arrow-up \^
+                   :arrow-left \<
+                   :arrow-right \>})
+
+(def wall-char \*)
+
+(def play-area-w 80)
+(def play-area-h 35)
+
+(defn control-player [connection action]
+  (case action
+    :arrow-down (p/alter-player-coords connection #(update % :y inc))
+    :arrow-up (p/alter-player-coords connection #(update % :y dec))
+    :arrow-left (p/alter-player-coords connection #(update % :x dec))
+    :arrow-right (p/alter-player-coords connection #(update % :x inc))
+    \space (b/add-bullet {:x (+ 0 (get-in @p/players [connection :coords :x]))
+                          :y (+ 1 (get-in @p/players [connection :coords :y]))
+                          :velx 0
+                          :vely 0.2})
+    nil)
+  (if (keyword? action)
+    (let [c (action player-chars (get-in @p/players [connection :char]))]
+      (p/alter-player [connection :char] (fn [_] c)))))
+
+
+(defn colorify [string color]
+  (let [color-code (str (es/code color))
+        main-color-code (str (es/code main-color))]
+    (str color-code string main-color-code)))
+
+(defn draw-at [screen {:keys [x y]} c]
+  (assoc-in screen [y x] c))
+
+(defn draw-bullets [screen]
+  (reduce #(draw-at %1
+                    (-> %2 (b/get-bullet-props)
+                           (update :x (fn [x] (int (+ x 0.5))))
+                           (update :y (fn [y] (int (+ y 0.5)))))
+                    (b/get-bullet-char %2))
+          screen
+          (b/get-bullet-ids)))
+
+(defn remove-bullets []
+  (doseq [id (b/get-bullet-ids)]
+    (let [props (b/get-bullet-props id)]
+      (if (false? (p/check-coords props))
+        (b/remove-bullet id)))))
+
+(defn draw-borders [screen]
+  (reduce #(draw-at %1 {:x (first %2)
+                        :y (second %2)}
+                    (colorify wall-char wall-color))
+          screen
+          (concat
+            (for [x (range 1 (inc play-area-w))
+                  y [1 play-area-h]]
+              [x y])
+            (for [x [1 play-area-w]
+                  y (range 0 (inc play-area-h))]
+              [x y]))))
 
 (defn empty-screen [w h]
   (vec
@@ -20,18 +93,18 @@
 
 (def clients (ref #{}))
 
-(defn draw-at [screen {:keys [x y]} c]
-  (assoc-in screen [y x] c))
+(defn color []
+  (nth players-colors (rand-int (count players-colors))))
 
 (defn screen-to-str [screen]
   (apply str (map #(apply str %) screen)))
 
-(defn draw-screen [w h]
-  (println (str "x: " @x " y: " @y))
-  (screen-to-str (-> (empty-screen w h) (draw-at {:x @x :y @y} \*))))
-    ;(for [i (range w)
-    ;      j (range h)]
-    ;  "x")))
+;(defn draw-screen [w h]
+;  (println (str "x: " @x " y: " @y))
+;  (screen-to-str (-> (empty-screen w h) (draw-at {:x @x :y @y} \*))))
+;    ;(for [i (range w)
+;    ;      j (range h)]
+;    ;  "x")))
 
 (defn rewrite-screen [client screen]
   (ts/write client es/CLR)
@@ -83,9 +156,16 @@
           (rewrite-screen c (resize-screen s w h))
           (ts/write c (es/cursor 0 (dec h)))))))
 
+(defn draw-players [screen]
+  (reduce #(draw-at %1 (first %2) (colorify (nth %2 2) (second %2))) screen
+          (p/get-players-properties [:coords :color :char])))
+
+(defn draw-screen []
+  (-> (empty-screen screen-w screen-h)
+      (draw-borders) (draw-players) (draw-bullets)))
+
 (defn redraw-diff []
-  (let [es (empty-screen screen-w screen-h)
-        s (reduce #(draw-at %1 %2 \X) es (p/get-players-property :coords))
+  (let [s (draw-screen)
         connections (p/get-players-connections)]
     (let [diff (screen-diff @prev-screen s)]
       (if (not (empty? diff))
@@ -102,6 +182,8 @@
 
 (defn redraw-thread []
   (loop []
+    (remove-bullets)
+    (b/move-all-bullets)
     (redraw-diff)
     (Thread/sleep 25)
     (recur)))
@@ -131,18 +213,15 @@
                           :y 0}
                     :health 5
                     :term {:w 0
-                           :h 0}})))
+                           :h 0}
+                    :color (color)
+                    :char player-starting-char})))
 
 
 
 (defn input [client c]
   (println c)
-  (case c
-    :arrow-down (p/alter-player [client :coords :y] inc)
-    :arrow-up (p/alter-player [client :coords :y] dec)
-    :arrow-left (p/alter-player [client :coords :x] dec)
-    :arrow-right (p/alter-player [client :coords :x] inc)
-    nil))
+  (control-player client c))
 
 (defn connection-close [client]
   (p/remove-player client))
