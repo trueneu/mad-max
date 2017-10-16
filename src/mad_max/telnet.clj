@@ -13,35 +13,28 @@
 
 (def main-color :white)
 
-(def player-char \*)
-
 (def player-starting-char \^)
-
-(def player-chars {:arrow-down \v
-                   :arrow-up \^
-                   :arrow-left \<
-                   :arrow-right \>})
 
 (def wall-char \*)
 
 (def play-area-w 80)
 (def play-area-h 35)
 
-(defn control-player [connection action]
-  (case action
-    :arrow-down (p/alter-player-coords connection #(update % :y inc))
-    :arrow-up (p/alter-player-coords connection #(update % :y dec))
-    :arrow-left (p/alter-player-coords connection #(update % :x dec))
-    :arrow-right (p/alter-player-coords connection #(update % :x inc))
-    \space (b/add-bullet {:x (+ 0 (get-in @p/players [connection :coords :x]))
-                          :y (+ 1 (get-in @p/players [connection :coords :y]))
-                          :velx 0
-                          :vely 0.2})
-    nil)
-  (if (keyword? action)
-    (let [c (action player-chars (get-in @p/players [connection :char]))]
-      (p/alter-player [connection :char] (fn [_] c)))))
+(def key-to-direction {:arrow-down :down
+                       :arrow-up :up
+                       :arrow-left :left
+                       :arrow-right :right})
 
+(def direction-to-char {:up \^
+                        :down \v
+                        :left \<
+                        :right \>})
+
+(defn control-player [connection action]
+  (let [move-conn (partial p/move-player connection)]
+    (cond
+      (contains? key-to-direction action) (p/move-player connection (get key-to-direction action))
+      (= action \space) (b/add-bullet (b/make-bullet connection {})))))
 
 (defn colorify [string color]
   (let [color-code (str (es/code color))
@@ -53,17 +46,17 @@
 
 (defn draw-bullets [screen]
   (reduce #(draw-at %1
-                    (-> %2 (b/get-bullet-props)
-                           (update :x (fn [x] (int (+ x 0.5))))
-                           (update :y (fn [y] (int (+ y 0.5)))))
-                    (b/get-bullet-char %2))
+                    {:x (get (b/get-bullet-props %2) :drawx)
+                     :y (get (b/get-bullet-props %2) :drawy)}
+                    (colorify (b/get-bullet-char %2)
+                              (get (b/get-bullet-props %2) :color)))
           screen
           (b/get-bullet-ids)))
 
 (defn remove-bullets []
   (doseq [id (b/get-bullet-ids)]
     (let [props (b/get-bullet-props id)]
-      (if (false? (p/check-coords props))
+      (if (false? (get props :alive))
         (b/remove-bullet id)))))
 
 (defn draw-borders [screen]
@@ -157,12 +150,29 @@
           (ts/write c (es/cursor 0 (dec h)))))))
 
 (defn draw-players [screen]
-  (reduce #(draw-at %1 (first %2) (colorify (nth %2 2) (second %2))) screen
+  (reduce #(draw-at %1 (first %2)
+                       (colorify (nth %2 2)
+                                 (second %2)))
+          screen
           (p/get-players-properties [:coords :color :char])))
 
 (defn draw-screen []
   (-> (empty-screen screen-w screen-h)
       (draw-borders) (draw-players) (draw-bullets)))
+
+(defn detect-collisions []
+  (for [player @p/players
+        bullet @b/bullets
+        :when (= (get (second player) :coords)
+                 (hash-map :x (get (second bullet) :drawx)
+                           :y (get (second bullet) :drawy)))]
+    [player bullet]))
+
+(defn process-collisions [collisions]
+  (doseq [[[connection player-props] [bullet-id bullet-props]] collisions]
+    (b/kill-bullet bullet-id)
+    (p/take-a-hit connection (get bullet-props :damage))
+    (println (str "health: " (get-in @p/players [connection :health])))))
 
 (defn redraw-diff []
   (let [s (draw-screen)
@@ -184,6 +194,8 @@
   (loop []
     (remove-bullets)
     (b/move-all-bullets)
+    (process-collisions (detect-collisions))
+    (p/process-deads)
     (redraw-diff)
     (Thread/sleep 25)
     (recur)))
@@ -211,11 +223,12 @@
                              :y 5}
                     :vel {:x 0
                           :y 0}
-                    :health 5
+                    :health 25
                     :term {:w 0
                            :h 0}
                     :color (color)
-                    :char player-starting-char})))
+                    :direction :up
+                    :alive true})))
 
 
 
@@ -246,8 +259,11 @@
 ;      :shutdown (fn [server]
 ;                  (println "Bye!"))}))
 ;
-(defn start-redraw-thread []
+(defn create-redraw-thread []
+  (Thread. redraw-thread))
+
+(defn start-thread [thread]
   (doto
-   (Thread. redraw-thread)
+   thread
    (.setDaemon true)
    (.start)))

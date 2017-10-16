@@ -4,6 +4,7 @@
 
 (def play-area-w 80)
 (def play-area-h 35)
+(def dead-char \`)
 
 (defn make-player [connection properties]
   [connection properties])
@@ -41,6 +42,20 @@
       (if (check-coords new-coords)
         (alter players assoc-in [connection :coords] new-coords)))))
 
+(defn move-player [connection direction]
+  (if (true? (get-in @players [connection :alive]))
+    (dosync
+      (let [[f new-char] (case direction
+                          :up [#(update % :y dec) \^]
+                          :down [#(update % :y inc) \v]
+                          :left [#(update % :x dec) \<]
+                          :right [#(update % :x inc) \>])
+            new-coords (f (get-in @players [connection :coords]))]
+        (println new-coords)
+        (alter players assoc-in [connection :char] new-char)
+        (alter players assoc-in [connection :direction] direction)
+        (if (check-coords new-coords)
+          (alter players assoc-in [connection :coords] new-coords))))))
 
 (defn reset-players []
   (dosync
@@ -49,3 +64,16 @@
 (defn remove-player [connection]
   (dosync
     (alter players dissoc connection)))
+
+(defn process-deads []
+  (doseq [connection (get-players-connections)]
+    (if (false? (get-in @players [connection :alive]))
+      (dosync
+        (alter players assoc-in [connection :char] dead-char)))))
+
+(defn take-a-hit [connection damage]
+  (dosync
+    (alter players update connection #(-> % (update :health
+                                              (fn [h] (- h damage)))
+                                          (assoc :alive
+                                                 (> (- (get % :health) damage) 0))))))
