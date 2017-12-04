@@ -249,16 +249,6 @@
       :shutdown (fn [server]
                   (println "Bye!"))}))
 
-;(def server
-;  (ts/create-server 5073
-;     {:connect  connect
-;      :line     line
-;      :input    input
-;      :resize   resize
-;      :close    (fn [client])
-;      :shutdown (fn [server]
-;                  (println "Bye!"))}))
-;
 (defn create-redraw-thread []
   (Thread. redraw-thread))
 
