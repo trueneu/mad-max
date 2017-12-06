@@ -45,8 +45,8 @@
   (alter arena-id inc)
   (dec @arena-id))
 
-(defn add-entity [entity]
-  (alter entities assoc @entity-id entity)
+(defn add-entity [entity a-id]
+  (alter entities assoc @entity-id (merge entity {:arena-id a-id}))
   (alter entity-id inc)
   (dec @entity-id))
 
@@ -57,14 +57,27 @@
   (get @special-entity-ids entity-type))
 
 (defn add-connected-client [client p-id a-id]
+  (util/debug-print "Adding client " client ", player-id: " p-id ", arena-id: " a-id)
   (alter clients assoc client {:player-id p-id :arena-id a-id :window {:width 0 :height 0}})
   (alter arenas update-in [a-id :clients] conj client))
 
-(defn place-entity-at-cell [a-id cell e-id]
-  (alter arenas update-in [a-id :entities-map cell] conj e-id))
-
 (defn remove-entity-from-cell [a-id cell e-id]
-  (alter arenas update-in [a-id :entities-map cell] disj e-id))
+  (alter arenas update-in [a-id :entities-map cell] disj e-id)
+  (alter entities update e-id dissoc :cell))
+
+(defn remove-entity [e-id]
+  (let [{:keys [cell arena-id]} (@entities e-id)]
+    (remove-entity-from-cell arena-id cell e-id)
+    (alter entities dissoc e-id)))
+
+(defn remove-client [client p-id a-id]
+  (alter arenas update-in [a-id :clients] disj client)
+  (alter clients dissoc client)
+  (remove-entity p-id))
+
+(defn place-entity-at-cell [a-id cell e-id]
+  (alter arenas update-in [a-id :entities-map cell] conj e-id)
+  (alter entities update e-id assoc :cell cell))
 
 (defn move-from-cell-to-cell [a-id old-cell new-cell e-id]
   (remove-entity-from-cell a-id old-cell e-id)
@@ -80,16 +93,22 @@
     (let [chosen-arena-id (choose-arena)
           chosen-arena (get @arenas chosen-arena-id)
           player (mm-player/make-player)
-          player-id (add-entity player)]
+          player-id (add-entity player chosen-arena-id)]
       (util/debug-print "Making and adding player:")
       (util/debug-print "chosen-arena-id: " chosen-arena-id)
       (util/debug-print "player: " player)
 
       (add-connected-client client player-id chosen-arena-id)
+      (util/debug-print "Clients now: " @clients)
       (place-entity-at-cell chosen-arena-id {:x 1 :y 1} player-id)
 
       (util/debug-print "resulting arena: " chosen-arena)
       player)))
+
+(defn remove-player [client]
+  (dosync
+    (let [{:keys [player-id arena-id]} (@clients client)]
+      (remove-client client player-id arena-id))))
 
 (defn render-and-send-arena! [a-id]
   (let [arena (get @arenas a-id)
@@ -99,9 +118,10 @@
       (let [{:keys [width height]} (get-in @clients [client :window])]
         (server/send-full-frame client (renderer/resize-screen render width height))))))
 
-(defn update-map-ref [_ref key data]
+(defn upmerge-map-ref [_ref key data]
   (dosync
-    (alter _ref update key data)))
+    (util/debug-print "Updating: " @_ref ", key: " key ", data: " data)
+    (alter _ref update key merge data)))
 
 (declare initialize)
 
@@ -109,9 +129,10 @@
   (util/debug-print "Recv action: " action)
   (let [action-type (get action :type)]
     (case action-type
-      :make-and-add-player (make-and-add-player (get action :client))
-      :print (println (get action :message))
-      :update-client (update-map-ref clients (get action :client) (get action :data))
+      :client-connect (make-and-add-player (action :client))
+      :client-disconnect (remove-player (action :client))
+      :print (println (action :message))
+      :update-client (upmerge-map-ref clients (action :client) (action :data))
       :stop-controller (reset-all-state)
       (util/debug-print "Unknown action: " action))))
 
@@ -140,7 +161,7 @@
 (defn initialize []
   (dosync
     (let [ind-wall (ind-wall/make-indestructible-wall)
-          ind-wall-id (add-entity ind-wall)]
+          ind-wall-id (add-entity ind-wall nil)]
       (add-special-entity-id ind-wall ind-wall-id)))
   (start-actions-thread))
 

@@ -18,7 +18,7 @@
 
 (defn connect [client]
   (initialize-client client)
-  (actions/enqueue {:type   :make-and-add-player
+  (actions/enqueue {:type   :client-connect
                     :client client}))
 
 (defn line [client string])
@@ -31,12 +31,15 @@
                     :data   {:window {:width  w
                                       :height h}}}))
 
-(defn close [client])
+(defn close [client]
+  (actions/enqueue {:type   :client-disconnect
+                    :client client}))
 
 (defn shutdown [^ServerSocket server]
-  (util/debug-print "Shutting down")
-  (actions/enqueue {:type :stop-controller})
-  (.close server))
+  "Stops telnet server and controller. Should not be invoked manually."
+  (util/debug-print "Shutting down"))
+  ;(actions/enqueue {:type :stop-controller}))
+  ;(.close server))
 
 (defn start-server []
   (reset! telnet-server
@@ -50,7 +53,7 @@
 
 (defn stop-server [^ServerSocket server]
   (util/debug-print "Stopping server")
-  (actions/enqueue {:type :stop-controller})
+  ;(actions/enqueue {:type :stop-controller})
   (if (nil? server)
     (util/debug-print "No server running, can't shut down")
     (.close server)))
