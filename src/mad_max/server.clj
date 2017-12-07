@@ -6,6 +6,7 @@
   (:import (java.net ServerSocket)))
 
 (def telnet-server (atom nil))
+(def clients (ref #{}))
 
 (defn initialize-client [client]
   (ts/write client (str es/IAC es/DO es/LINE))
@@ -16,7 +17,12 @@
 (defn send-full-frame [client frame]
   (ts/write client frame))
 
+(defn send-disconnect [client]
+  (.close client))
+
 (defn connect [client]
+  (dosync
+    (alter clients conj client))
   (initialize-client client)
   (actions/enqueue {:type   :client-connect
                     :client client}))
@@ -32,14 +38,16 @@
                                       :height h}}}))
 
 (defn close [client]
+  (dosync
+    (alter clients disj client))
   (actions/enqueue {:type   :client-disconnect
                     :client client}))
 
 (defn shutdown [^ServerSocket server]
-  "Stops telnet server and controller. Should not be invoked manually."
-  (util/debug-print "Shutting down"))
-  ;(actions/enqueue {:type :stop-controller}))
-  ;(.close server))
+  "Stops telnet server. Should not be invoked manually."
+  (util/debug-print "Shutting down")
+  (doseq [client @clients] (send-disconnect client))
+  (.close server))
 
 (defn start-server []
   (reset! telnet-server
@@ -53,10 +61,9 @@
 
 (defn stop-server [^ServerSocket server]
   (util/debug-print "Stopping server")
-  ;(actions/enqueue {:type :stop-controller})
   (if (nil? server)
     (util/debug-print "No server running, can't shut down")
-    (.close server)))
+    (shutdown server)))
 
 (defn restart-server [telnet-server]
   (stop-server @telnet-server)

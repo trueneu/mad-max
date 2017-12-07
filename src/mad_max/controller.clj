@@ -57,7 +57,9 @@
   (get @special-entity-ids entity-type))
 
 (defn add-connected-client [client p-id a-id]
-  (util/debug-print "Adding client " client ", player-id: " p-id ", arena-id: " a-id)
+  (util/debug-print "Adding client " client)
+  (util/debug-print "  player-id: " p-id)
+  (util/debug-print "  arena-id: " a-id)
   (alter clients assoc client {:player-id p-id :arena-id a-id :window {:width 0 :height 0}})
   (alter arenas update-in [a-id :clients] conj client))
 
@@ -120,7 +122,9 @@
 
 (defn upmerge-map-ref [_ref key data]
   (dosync
-    (util/debug-print "Updating: " @_ref ", key: " key ", data: " data)
+    (util/debug-print "Updating: " @_ref)
+    (util/debug-print "  Key: " key)
+    (util/debug-print "  Data: " data)
     (alter _ref update key merge data)))
 
 (declare initialize)
@@ -131,6 +135,7 @@
     (case action-type
       :client-connect (make-and-add-player (action :client))
       :client-disconnect (remove-player (action :client))
+      :client-disconnect-all (map remove-player (keys @clients))
       :print (println (action :message))
       :update-client (upmerge-map-ref clients (action :client) (action :data))
       :stop-controller (reset-all-state)
@@ -168,3 +173,8 @@
 (defn restart []
   (reset-all-state)
   (initialize))
+
+(defn print-debug-info []
+  (util/debug-print "Clients: " @clients)
+  (util/debug-print "Arena 0: " (@arenas 0))
+  (util/debug-print "Entities: " @entities))
