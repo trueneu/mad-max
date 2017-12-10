@@ -17,9 +17,10 @@
               {:x (dec width) :y j}))))
 
 (defn make-arena [dimensions ind-wall-id]
-  (let [empty-arena   {:dimensions (merge {:width 5} {:height 5} dimensions)
+  (let [empty-arena   {:dimensions (merge {:width 20} {:height 10} dimensions)
                        :entities-map {}
-                       :clients #{}}
+                       :clients #{}
+                       :player-ids []}
         initialized-map-arena (reduce #(assoc-in %1 [:entities-map %2] #{}) empty-arena
                                 (for [i (range (get-in empty-arena [:dimensions :width]))
                                       j (range (get-in empty-arena [:dimensions :height]))]

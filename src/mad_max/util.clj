@@ -11,3 +11,6 @@
    (when DEBUG
      (println desc)
      (pp/pprint obj))))
+
+(defn mapvals [m f]
+  (into {} (for [[k v] m] [k (f v)])))

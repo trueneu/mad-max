@@ -8,13 +8,27 @@
 (def telnet-server (atom nil))
 (def clients (ref #{}))
 
+(def char-to-action-and-command
+  (merge
+    (apply hash-map
+      (interleave
+        [:arrow-up :arrow-down :arrow-left :arrow-right]
+        (map (partial hash-map :type :move-player :direction)
+             [:up :down :left :right])))
+    {\space {:type :shoot}}
+    {\z {:type :throw-grenade}}))
+
 (defn initialize-client [client]
   (ts/write client (str es/IAC es/DO es/LINE))
   (ts/write client (str es/IAC es/DO es/NAWS))
   (ts/write client (str es/IAC es/WILL es/ECHO))
   (ts/write client es/CLR))
 
+(defn reset-cursor [client x y]
+  (ts/write client (es/cursor x y)))
+
 (defn send-full-frame [client frame]
+  (reset-cursor client 0 0)
   (ts/write client frame))
 
 (defn send-disconnect [client]
@@ -27,9 +41,12 @@
   (actions/enqueue {:type   :client-connect
                     :client client}))
 
-(defn line [client string])
+(defn line [client string]
+  (util/debug-print "Received line! Shouldn't happen."))
 
-(defn input [client ch])
+(defn input [client ch]
+  (util/debug-print "Received input from client: " ch)
+  (actions/enqueue (merge {:client client} (char-to-action-and-command ch))))
 
 (defn resize [client {:keys [w h]}]
   (actions/enqueue {:type   :update-client
