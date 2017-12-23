@@ -20,7 +20,8 @@
    :passable? true
    :destructible? true
    :alive? true
-   :time-to-vanish 500})
+   :time-to-vanish 500
+   :grenades 3})
 
 (defn move [player direction]
   (let [arena (:arena player)

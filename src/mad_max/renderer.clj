@@ -3,9 +3,12 @@
             [mad-max.mm-player :as mm-player]
             [mad-max.indestructible-wall :as ind-wall]
             [mad-max.mm-bullet :as mm-bullet]
-            [mad-max.util :as util]))
+            [mad-max.util :as util]
+            [mad-max.health-powerup :as mm-health-powerup]
+            [mad-max.grenade :as mm-grenade]))
 
 (def blank-lines-health-stats 2)
+(def blank-space-health-stats 2)
 
 (def min-width 80)
 (def min-height 30)
@@ -18,8 +21,14 @@
 (defmethod representation :bullet [entity]
   (mm-bullet/representation entity))
 
+(defmethod representation :grenade [entity]
+  (mm-grenade/representation))
+
 (defmethod representation :indestructible-wall [_]
   (ind-wall/representation))
+
+(defmethod representation :health-powerup [_]
+  (mm-health-powerup/representation))
 
 (defmethod representation nil [_]
   \space)
@@ -98,7 +107,7 @@
               (range string-width)))))
 
 (defn form-health-string [player]
-  (str (player :name) " health: "
+  (str (player :name) "'s HP: "
        (if (> (player :health) 0)
          (player :health)
          "as dead as Jim Morisson")))
@@ -107,8 +116,10 @@
   (dosync
     (let [player-ids (arena :player-ids)
           players-count (count (arena :player-ids))
-          first-health-stats-y (dec (+ blank-lines-health-stats (get-in arena [:dimensions :height])))]
-      (reduce (fn [scr-acc idx] (place-string-at scr-acc {:x 0 :y (+ first-health-stats-y idx)}
+          ;first-health-stats-y (dec (+ blank-lines-health-stats (get-in arena [:dimensions :height])))
+          first-health-stats-y 0
+          health-stats-x (dec (+ blank-space-health-stats (get-in arena [:dimensions :width])))]
+      (reduce (fn [scr-acc idx] (place-string-at scr-acc {:x health-stats-x :y (+ first-health-stats-y idx)}
                                                  (form-health-string (all-entities (player-ids idx)))))
               render
               (range players-count)))))

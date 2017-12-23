@@ -6,4 +6,4 @@
    :destructible? false})
 
 (defn representation []
-  \*)
+  \X)

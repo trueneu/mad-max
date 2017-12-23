@@ -17,7 +17,7 @@
               {:x (dec width) :y j}))))
 
 (defn make-arena [dimensions ind-wall-id]
-  (let [empty-arena   {:dimensions (merge {:width 20} {:height 10} dimensions)
+  (let [empty-arena   {:dimensions (merge {:width 30} {:height 20} dimensions)
                        :entities-map {}
                        :clients #{}
                        :player-ids []}
