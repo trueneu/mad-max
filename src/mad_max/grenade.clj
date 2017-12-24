@@ -18,8 +18,8 @@
    :destructible? true
    :real-cell real-cell
    :arena-id arena-id
-   :time-to-explode 150
-   :time-to-drop 80})
+   :time-to-explode 250
+   :time-to-drop 200})
 
 (defn real-cell-to-cell [cell]
   (util/mapvals cell #(int (+ 0.5 %))))
