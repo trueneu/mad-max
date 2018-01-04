@@ -1,6 +1,6 @@
 (ns mad-max.health-powerup)
 
-(defn make-health-powerup [& {:keys [arena-id]}]
+(defn make-health-powerup [arena-id]
   {:type      :health-powerup
    :passable? true
    :destructible? false

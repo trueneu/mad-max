@@ -13,7 +13,7 @@
                       :left {:x (- velocity)}
                       :right {:x velocity}})
 
-(defn make-bullet [& {:keys [direction player-id real-cell arena-id]}]
+(defn make-bullet [arena-id & {:keys [direction player-id real-cell]}]
   {:direction direction
    :type      :bullet
    :damage    1

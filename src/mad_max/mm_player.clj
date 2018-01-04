@@ -9,10 +9,10 @@
 
 (def dead-representation \`)
 
-(defn make-player [& {:keys [health color direction]
-                      :or   {health    10
-                             color     :black
-                             direction :up}}]
+(defn make-player [arena-id & {:keys [health color direction]
+                               :or   {health    10
+                                      color     :black
+                                      direction :up}}]
   {:health    health
    :color     color
    :direction direction
@@ -21,7 +21,8 @@
    :destructible? true
    :alive? true
    :time-to-vanish 500
-   :grenades 3})
+   :grenades 3
+   :arena-id arena-id})
 
 (defn move [player direction]
   (let [arena (:arena player)
