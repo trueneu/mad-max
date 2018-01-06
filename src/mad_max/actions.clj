@@ -8,6 +8,13 @@
   (print-method (seq q) w)
   (print-method '-< w))
 
+(defn q-flush []
+  (dosync
+    (ref-set queue PersistentQueue/EMPTY)))
+
+(defn q-empty? []
+  (clojure.core/empty? @queue))
+
 (defn enqueue [item]
   (dosync
     (alter queue conj item)))

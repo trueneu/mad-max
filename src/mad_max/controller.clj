@@ -454,7 +454,7 @@
 (defn dispatch-client-line-input [action]
   (util/debug-print "line-input action: " action)
   (util/debug-print "client state: " ((@clients (action :client)) :state))
-  (when (= ((@clients (action :client)) :state) :entering-name)
+  (when (= ((@clients (action :client)) :state) :just-connected)
     (let [player-name (->> (action :input) (take max-player-name-length) (apply str))
           player-id ((@clients (action :client)) :player-id)]
       (when-not (empty? player-name)
