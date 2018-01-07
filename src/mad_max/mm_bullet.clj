@@ -24,8 +24,5 @@
    :real-cell real-cell
    :arena-id arena-id})
 
-(defn real-cell-to-cell [cell]
-  (util/mapvals cell #(int (+ 0.5 %))))
-
 (defn representation [bullet]
   (get dir-to-representation (:direction bullet)))

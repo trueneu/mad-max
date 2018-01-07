@@ -20,7 +20,8 @@
   (let [empty-arena   {:dimensions (merge {:width 30} {:height 20} dimensions)
                        :entities-map {}
                        :clients #{}
-                       :player-ids []}
+                       :player-ids []
+                       :cells-with-possible-collisions #{}}
         initialized-map-arena (reduce #(assoc-in %1 [:entities-map %2] #{}) empty-arena
                                 (for [i (range (get-in empty-arena [:dimensions :width]))
                                       j (range (get-in empty-arena [:dimensions :height]))]

@@ -13,24 +13,17 @@
             [mad-max.health-powerup :as mm-health-powerup]
             [mad-max.grenade :as mm-grenade]
             [mad-max.game :as mm-game]
-            [mad-max.heartbeats :as heartbeats]))
+            [mad-max.heartbeats :as heartbeats]
+            [mad-max.cells :as cells]
+            [mad-max.entities :as entities]
+            [mad-max.collisions :as collisions]))
 
 (def game-debug (atom nil))
-
-(defn add-entity [game entity]
-  (-> game
-    (assoc-in [:entities (game :entity-id)] entity)
-    (update :entity-id inc)))
 
 (defn add-arena [game arena]
   (-> game
     (assoc-in [:arenas (game :arena-id)] arena)
     (update :arena-id inc)))
-
-(defn add-special-entity [game entity]
-  (-> game
-      (add-entity entity)
-      (assoc-in [:special-entities-type-to-id (entity :type)] (game :entity-id))))
 
 (defn add-client [game client client-connection]
   (-> game
@@ -40,13 +33,10 @@
   (-> game
     (update :clients dissoc client-connection)))
 
-(defn special-entity-id [game special-entity-type]
-  (get-in game [:special-entities-type-to-id special-entity-type]))
-
 (defn init-game [game]
   (let [ind-wall (ind-wall/make-indestructible-wall)
         h-grenade (holy-grenade/make-holy-grenade)]
-    (reduce add-special-entity game [ind-wall h-grenade])))
+    (reduce entities/add-special-entity game [ind-wall h-grenade])))
 
 (defn dispatch-client-line-input [game client-connection input]
   (case (get-in game [:clients client-connection :state])
@@ -73,56 +63,30 @@
         entities-in-cell (map (partial get (game :entities)) entities-ids-in-cell)]
     (every? :passable? entities-in-cell)))
 
-(def dir-to-movement {:up    [dec :y]
-                      :down  [inc :y]
-                      :left  [dec :x]
-                      :right [inc :x]})
-
-(defn change-cell [coords direction]
-  (update coords
-          (second (dir-to-movement direction))
-          (first (dir-to-movement direction))))
-
-(defn place-entity-at-cell-at-arena [game entity-id cell arena-id]
-  (-> game
-      (assoc-in [:entities entity-id :cell] cell)
-      (update-in [:arenas arena-id :entities-map cell] conj entity-id)))
-
-(defn place-entity-at-cell [game entity-id cell]
-  (let [arena-id (get-in game [:entities entity-id :arena-id])]
-    (place-entity-at-cell-at-arena game entity-id cell arena-id)))
-
-(defn remove-entity-from-cell [game entity-id]
-  (let [arena-id (get-in game [:entities entity-id :arena-id])
-        cell (get-in game [:entities entity-id :cell])]
-    (-> game
-        (update-in [:entities entity-id :cell] {:x -1 :y -1})
-        (update-in [:arenas arena-id :entities-map cell] disj entity-id))))
-
 (defn move-player [game client-connection direction]
   (let [player-id (get-in game [:clients client-connection :player-id])
         player (get-in game [:entities player-id])
         arena-id (player :arena-id)
         current-cell (player :cell)
-        new-cell (change-cell current-cell direction)]
+        new-cell (cells/change-cell current-cell direction)]
     (if (and (player :alive?) (passable? game arena-id new-cell))
       (-> game
-          (remove-entity-from-cell player-id)
-          (place-entity-at-cell player-id new-cell)
+          (cells/remove-entity-from-cell player-id)
+          (cells/place-entity-at-cell player-id new-cell)
           (assoc-in [:entities player-id :direction] direction))
       game)))
 
 (defn make-bullet [game client-connection]
   (let [{:keys [player-id arena-id]} (get-in game [:clients client-connection])
         {:keys [direction color cell alive?]} (get-in game [:entities player-id])
-        bullet-cell (change-cell cell direction)
+        bullet-cell (cells/change-cell cell direction)
         bullet (mm-bullet/make-bullet arena-id :direction direction :player-id player-id :real-cell bullet-cell)
         bullet-id (game :entity-id)]
     (if alive?
       (->
         game
-        (add-entity bullet)
-        (place-entity-at-cell bullet-id bullet-cell))
+        (entities/add-entity bullet)
+        (cells/place-entity-at-cell bullet-id bullet-cell))
       game)))
 
 
@@ -143,7 +107,7 @@
     nil))
 
 (defn make-arena [game]
-  (->> (arena/make-arena {:width 5 :height 5} (special-entity-id game :indestructible-wall))
+  (->> (arena/make-arena {:width 20 :height 10} (entities/special-entity-id game :indestructible-wall))
        (add-arena game)))
 
 (defn make-arena-if-needed [game]
@@ -158,8 +122,8 @@
         player (mm-player/make-player name chosen-arena-id)
         player-id (g :entity-id)]
     (-> g
-        (add-entity player)
-        (place-entity-at-cell player-id {:x 1 :y 1})
+        (entities/add-entity player)
+        (cells/place-entity-at-cell player-id {:x 1 :y 1})
         (update-in [:arenas chosen-arena-id :player-ids] conj player-id)
         (update-in [:arenas chosen-arena-id :clients] conj client-connection)
         (update-in [:clients client-connection] merge {:player-id player-id
@@ -188,12 +152,25 @@
       (recur (dispatch-action g (actions/dequeue))))))
 
 (defn heartbeat-entities [game]
-  ())
-;;;;;;;;;;;;
+  (reduce
+    (fn [g entity-id]
+      (heartbeats/heartbeat g entity-id))
+    game
+    (keys (game :entities))))
+
+(defn process-collisions [game]
+  (reduce
+    (fn [g arena-id]
+      (collisions/detect-and-process g arena-id))
+    game
+    (keys (game :arenas))))
 
 (defn process-game [game]
   (->
-    game))
+    game
+    (heartbeat-entities)
+    (process-collisions)))
+    ;heartbeat-arenas
 
 (defn render-arenas [game]
   (reduce
