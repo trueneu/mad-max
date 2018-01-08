@@ -41,6 +41,7 @@
 (defn dispatch-client-line-input [game client-connection input]
   (case (get-in game [:clients client-connection :state])
     :sent-name-prompt (do
+                        (server/send-no-echo client-connection)
                         (actions/enqueue
                           {:type :make-player
                            :name input
@@ -119,7 +120,7 @@
 (defn make-player [game client-connection name]
   (let [g (make-arena-if-needed game)
         chosen-arena-id (choose-arena g)
-        player (mm-player/make-player name chosen-arena-id)
+        player (mm-player/make-player name chosen-arena-id client-connection)
         player-id (g :entity-id)]
     (-> g
         (entities/add-entity player)
@@ -199,9 +200,9 @@
                          (server/send-full-frame client-connection "Enter your name to continue: ")
                          (update-in g [:clients client-connection] assoc :state :sent-name-prompt))
         :sent-name-prompt g
-        :in-action (do
-                     (send-arena-render! g client-connection)
-                     g)
+        (:in-action :kia) (do
+                            (send-arena-render! g client-connection)
+                            g)
         (do (util/debug-print "Unknown client state: " (client :state))
           g)))
     game (game :clients)))

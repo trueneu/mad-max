@@ -1,7 +1,9 @@
 (ns mad-max.heartbeats
   (:require [mad-max.grenade :as mm-grenade]
             [mad-max.mm-bullet :as mm-bullet]
-            [mad-max.cells :as cells]))
+            [mad-max.cells :as cells]
+            [mad-max.entities :as entities]
+            [mad-max.arena :as arena]))
 
 (defmulti heartbeat (fn [game entity-id] (get-in game [:entities entity-id :type])))
 
@@ -29,12 +31,18 @@
 ;          (remove-entity grenade-id))
 ;        (move-from-cell-to-cell arena-id cell new-cell grenade-id)))))
 ;
-;(defmethod heartbeat :player [p-id]
-;  (when (not ((player-by-id p-id) :alive?))
-;    (dosync
-;      (if (> ((player-by-id p-id) :time-to-vanish) 0)
-;        (alter entities update-in [p-id :time-to-vanish] dec)
-;        (remove-player p-id)))))
+(defmethod heartbeat :player [game player-id]
+  (let [player (get-in game [:entities player-id])]
+    (if-not (player :alive?)
+      (if (pos? (player :time-to-vanish))
+        (update-in game [:entities player-id :time-to-vanish] dec)
+        (-> game
+            (cells/remove-entity-from-cell player-id)
+            (entities/remove-entity player-id)
+            (update-in [:arenas (player :arena-id)] arena/remove-player-id player-id)
+            (update-in [:clients (player :client-connection)] merge {:state :kia})))
+      game)))
+
 
 (defmethod heartbeat :bullet [game bullet-id]
   (let [bullet (get-in game [:entities bullet-id])

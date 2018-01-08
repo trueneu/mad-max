@@ -15,7 +15,6 @@
   (get-in game [:special-entities-type-to-id special-entity-type]))
 
 (defn remove-entity [game entity-id]
-  (util/debug-print "Removing entity " entity-id)
   (->
     game
     (update :entities dissoc entity-id)))

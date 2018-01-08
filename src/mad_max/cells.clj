@@ -28,8 +28,8 @@
   (let [arena-id (get-in game [:entities entity-id :arena-id])
         cell (get-in game [:entities entity-id :cell])]
     (-> game
-        (update-in [:entities entity-id :old-cell] cell)
-        (update-in [:entities entity-id :cell] {:x -1 :y -1})
+        (assoc-in [:entities entity-id :old-cell] cell)
+        (assoc-in [:entities entity-id :cell] {:x -1 :y -1})
         (update-in [:arenas arena-id :entities-map cell] disj entity-id))))
 
 (defn real-cell-to-cell [cell]

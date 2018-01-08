@@ -7,10 +7,11 @@
 
 (def dead-representation \`)
 
-(defn make-player [name arena-id & {:keys [health color direction]
-                                    :or   {health    10
-                                           color     :black
-                                           direction :up}}]
+(defn make-player [name arena-id client-connection
+                   & {:keys [health color direction]
+                      :or   {health    10
+                             color     :black
+                             direction :up}}]
   {:health    health
    :color     color
    :direction direction
@@ -21,14 +22,13 @@
    :time-to-vanish 500
    :grenades 3
    :arena-id arena-id
-   :name name})
+   :name name
+   :client-connection client-connection})
 
 (defn representation [player]
   (if (player :alive?)
     (get dir-to-player-representation (:direction player))
     dead-representation))
-
-(defn take-a-hit [])
 
 (defn take-a-hit [player damage]
   (let [new-health (- (player :health) damage)]

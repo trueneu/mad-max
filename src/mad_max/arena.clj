@@ -30,3 +30,5 @@
             initialized-map-arena
             (arena-indestructible-walls-cells initialized-map-arena))))
 
+(defn remove-player-id [arena player-id]
+  (update arena :player-ids (fn [coll] (vec (remove #(= % player-id) coll)))))
