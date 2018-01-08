@@ -39,8 +39,7 @@
         (-> game
             (cells/remove-entity-from-cell player-id)
             (entities/remove-entity player-id)
-            (update-in [:arenas (player :arena-id)] arena/remove-player-id player-id)
-            (update-in [:clients (player :client-connection)] merge {:state :kia})))
+            (update-in [:arenas (player :arena-id)] arena/remove-player-id player-id)))
       game)))
 
 

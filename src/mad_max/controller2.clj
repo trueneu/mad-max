@@ -30,6 +30,7 @@
     (assoc-in [:clients client-connection] client)))
 
 (defn remove-client [game client-connection]
+  (util/debug-print "Rmvng client")
   (-> game
     (update :clients dissoc client-connection)))
 
@@ -92,15 +93,19 @@
 
 
 (defn dispatch-client-char-input [game client-connection input]
-  (case (get-in game [:clients client-connection :state])
-    :in-action (do
-                 (let [action (char-to-action-and-command input)
-                       action-type (get action :type)]
-                   (case action-type
-                     :move-player (move-player game client-connection (action :direction))
-                     :shoot (make-bullet game client-connection)
-                     game)))
-    game))
+  (let [player-id (get-in game [:clients client-connection :player-id] nil)
+        player (get-in game [:entities player-id] nil)]
+    (if (and player (player :alive?))
+      (case (get-in game [:clients client-connection :state])
+        :in-action (do
+                     (let [action (char-to-action-and-command input)
+                           action-type (get action :type)]
+                       (case action-type
+                         :move-player (move-player game client-connection (action :direction))
+                         :shoot (make-bullet game client-connection)
+                         game)))
+        game)
+      game)))
 
 (defn choose-arena [game]
   (if (> (game :arena-id) 0)
@@ -200,9 +205,9 @@
                          (server/send-full-frame client-connection "Enter your name to continue: ")
                          (update-in g [:clients client-connection] assoc :state :sent-name-prompt))
         :sent-name-prompt g
-        (:in-action :kia) (do
-                            (send-arena-render! g client-connection)
-                            g)
+        :in-action (do
+                     (send-arena-render! g client-connection)
+                     g)
         (do (util/debug-print "Unknown client state: " (client :state))
           g)))
     game (game :clients)))
