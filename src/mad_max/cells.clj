@@ -20,8 +20,8 @@
   (update-in game [:arenas arena-id :cells-with-possible-collisions] disj cell))
 
 (defn place-entity-at-cell-at-arena [game entity-id cell arena-id]
-  (util/debug-print "placing " entity-id)
-  (util/debug-print "  at cell " cell)
+  ;(util/debug-print "placing " entity-id)
+  ;(util/debug-print "  at cell " cell)
   (-> game
       (assoc-in [:entities entity-id :cell] cell)
       (update-in [:arenas arena-id :entities-map cell] conj entity-id)

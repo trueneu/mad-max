@@ -193,6 +193,13 @@
     game
     (keys (game :entities))))
 
+(defn heartbeat-arenas [game]
+  (reduce
+    (fn [g arena-id]
+      (heartbeats/arena-heartbeat g arena-id))
+    game
+    (keys (game :arenas))))
+
 (defn process-collisions [game]
   (reduce
     (fn [g arena-id]
@@ -204,8 +211,8 @@
   (->
     game
     (heartbeat-entities)
-    (process-collisions)))
-    ;heartbeat-arenas
+    (process-collisions)
+    (heartbeat-arenas)))
 
 (defn render-arenas [game]
   (reduce

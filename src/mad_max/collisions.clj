@@ -52,11 +52,19 @@
 ;(defmethod collision [:bullet :health-powerup] [bullet-id health-powerup-id]
 ;  (collision health-powerup-id bullet-id))
 ;
-;(defmethod collision [:health-powerup :player] [health-powerup-id player-id]
-;  (heal player-id health-powerup-id))
-;
-;(defmethod collision [:player :health-powerup ] [player-id health-powerup-id]
-;  (collision health-powerup-id player-id))
+(defmethod collision [:health-powerup :player] [game health-powerup-id player-id]
+  (let [player (get-in game [:entities player-id])
+        health-powerup (get-in game [:entities health-powerup-id])]
+    (if (player :alive?)
+      (->
+        game
+        (update-in [:entities player-id] mad-max.mm-player/heal (health-powerup :heal))
+        (cells/remove-entity-from-cell health-powerup-id)
+        (entities/remove-entity health-powerup-id))
+      game)))
+
+(defmethod collision [:player :health-powerup ] [game player-id health-powerup-id]
+  (collision game health-powerup-id player-id))
 ;
 ;(defmethod collision [:bullet :bullet] [bullet-id-1 bullet-id-2])
 ;
@@ -86,9 +94,17 @@
 (defn process-collision [game arena-id cell]
   (let [entitiy-ids-at-cell (get-in game [:arenas arena-id :entities-map cell])
         collision-map (combo/combinations entitiy-ids-at-cell 2)]
+    ;(util/debug-print "collision at cell: " cell)
+    ;(util/debug-print "entities: " entitiy-ids-at-cell)
+    ;(util/debug-print "map: " collision-map)
     (reduce
       (fn [g [entity-id1 entity-id2]]
-        (collision g entity-id1 entity-id2))
+        (let [[entity-1 entity-2] (map (g :entities) [entity-id1 entity-id2])]
+          ;(util/debug-print "  ent1: " entity-1)
+          ;(util/debug-print "  ent2: " entity-2)
+          (if (or (nil? entity-1) (nil? entity-2))
+            g
+            (collision g entity-id1 entity-id2))))
       game
       collision-map)))
 
@@ -97,8 +113,7 @@
     (fn [g cell]
       (->
         (if (collision? g arena-id cell)
-          (do
-            (process-collision g arena-id cell))
+          (process-collision g arena-id cell)
           g)
         (cells/remove-cell-with-possible-collision arena-id cell)))
     game

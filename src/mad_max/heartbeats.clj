@@ -3,7 +3,8 @@
             [mad-max.mm-bullet :as mm-bullet]
             [mad-max.cells :as cells]
             [mad-max.entities :as entities]
-            [mad-max.arena :as arena]))
+            [mad-max.arena :as arena]
+            [mad-max.health-powerup :as health-powerup]))
 
 (defmulti heartbeat (fn [game entity-id] (get-in game [:entities entity-id :type])))
 
@@ -56,12 +57,13 @@
         (cells/remove-entity-from-cell bullet-id)
         (cells/place-entity-at-cell bullet-id new-cell))))
 
-;(defn arena-heartbeat [a-id]
-;  (let [r (rand-int health-powerup-chance)]
-;    (when (zero? r)
-;      (dosync
-;        (let [entities-map ((@arenas a-id) :entities-map)
-;              empty-cells (filter #(empty? (second %)) entities-map)]
-;          (when-not (empty? empty-cells)
-;            (let [empty-cell (first (rand-nth empty-cells))]
-;              (make-and-add-health-powerup a-id empty-cell))))))))
+(defn arena-heartbeat [game arena-id]
+  (if (health-powerup/health-powerup-chance?)
+    (let [arena (get-in game [:arenas arena-id])
+          unoccupied-cell (arena/choose-unoccupied-cell arena)
+          powerup (health-powerup/make-health-powerup arena-id)
+          powerup-id (game :entity-id)]
+      (-> game
+          (entities/add-entity powerup)
+          (cells/place-entity-at-cell powerup-id unoccupied-cell)))
+    game))
