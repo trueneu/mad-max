@@ -36,3 +36,6 @@
       player
       (assoc :health new-health)
       (merge (if (<= new-health 0) {:destructible? false :alive? false})))))
+
+(defn insta-death [player]
+  (take-a-hit player (player :health)))

@@ -20,6 +20,11 @@
 
 (def game-debug (atom nil))
 
+(def player-colors [:black :red :green :yellow :blue :magenta :cyan :white])
+
+(def next-player-color (apply hash-map (concat (interleave player-colors (rest player-colors))
+                                               (list (last player-colors) (first player-colors)))))
+
 (defn add-arena [game arena]
   (-> game
     (assoc-in [:arenas (game :arena-id)] arena)
@@ -82,7 +87,7 @@
   (let [{:keys [player-id arena-id]} (get-in game [:clients client-connection])
         {:keys [direction color cell alive?]} (get-in game [:entities player-id])
         grenade-cell (cells/change-cell cell direction)
-        grenade (mm-grenade/make-grenade arena-id :direction direction :player-id player-id :real-cell grenade-cell)
+        grenade (mm-grenade/make-grenade arena-id :direction direction :player-id player-id :real-cell grenade-cell :color color)
         grenade-id (game :entity-id)]
     (if alive?
       (->
@@ -95,7 +100,7 @@
   (let [{:keys [player-id arena-id]} (get-in game [:clients client-connection])
         {:keys [direction color cell alive?]} (get-in game [:entities player-id])
         bullet-cell (cells/change-cell cell direction)
-        bullet (mm-bullet/make-bullet arena-id :direction direction :player-id player-id :real-cell bullet-cell)
+        bullet (mm-bullet/make-bullet arena-id :direction direction :player-id player-id :real-cell bullet-cell :color color)
         bullet-id (game :entity-id)]
     (if alive?
       (->
@@ -138,13 +143,21 @@
 (defn make-player [game client-connection name]
   (let [g (make-arena-if-needed game)
         chosen-arena-id (choose-arena g)
-        player (mm-player/make-player name chosen-arena-id client-connection)
+        chosen-arena (get-in g [:arenas chosen-arena-id])
+        unoccupied-cell (mm-arena/choose-unoccupied-cell chosen-arena)
+        last-used-player-color (get-in g [:arenas chosen-arena-id :last-used-player-color])
+        player-color (next-player-color last-used-player-color)
+        player (mm-player/make-player name chosen-arena-id client-connection
+                                      :color player-color
+                                      :direction (rand-nth util/directions))
+
         player-id (g :entity-id)]
     (-> g
         (entities/add-entity player)
-        (cells/place-entity-at-cell player-id {:x 1 :y 1})
+        (cells/place-entity-at-cell player-id unoccupied-cell)
         (update-in [:arenas chosen-arena-id :player-ids] conj player-id)
         (update-in [:arenas chosen-arena-id :clients] conj client-connection)
+        (update-in [:arenas chosen-arena-id] assoc :last-used-player-color player-color)
         (update-in [:clients client-connection] merge {:player-id player-id
                                                        :arena-id chosen-arena-id}))))
 
@@ -152,7 +165,10 @@
   (let [action-type (get action :type)]
     (case action-type
       :client-connect (add-client game (mm-client/make-client) (action :client-connection))
-      :client-disconnect (remove-client game (action :client-connection))
+      :client-disconnect (let [player-id (get-in game [:clients (action :client-connection) :player-id])]
+                           (-> game
+                             (remove-client (action :client-connection))
+                             (update-in [:entities player-id] mm-player/insta-death)))
       :make-player (make-player game (action :client-connection) (action :name))
       ;:print (println (action :message))
       :update-client (update-in game [:clients (action :client-connection)] merge (action :data))
@@ -202,7 +218,6 @@
   (let [client (get-in game [:clients client-connection])
         arena-id (client :arena-id)
         render (get-in game [:arenas arena-id :render])]
-    ;(util/debug-print "Sending render: " render)
     (let [{:keys [width height]} (client :window)
           resized-screen (renderer/resize-screen render width height)
           frame (renderer/screen-to-full-frame resized-screen)]

@@ -21,7 +21,8 @@
                        :entities-map {}
                        :clients #{}
                        :player-ids []
-                       :cells-with-possible-collisions #{}}
+                       :cells-with-possible-collisions #{}
+                       :last-used-player-color :black}
         initialized-map-arena (reduce #(assoc-in %1 [:entities-map %2] #{}) empty-arena
                                 (for [i (range (get-in empty-arena [:dimensions :width]))
                                       j (range (get-in empty-arena [:dimensions :height]))]
@@ -32,3 +33,10 @@
 
 (defn remove-player-id [arena player-id]
   (update arena :player-ids (fn [coll] (vec (remove #(= % player-id) coll)))))
+
+(defn choose-unoccupied-cell [arena]
+  (let [entities-map (arena :entities-map)
+        unoccupied-cells (map first
+                           (filter #(empty? (second %))
+                                    entities-map))]
+    (rand-nth unoccupied-cells)))

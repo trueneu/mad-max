@@ -11,7 +11,8 @@
                       :left {:x (- velocity)}
                       :right {:x velocity}})
 
-(defn make-grenade [arena-id & {:keys [direction player-id real-cell]}]
+(defn make-grenade [arena-id & {:keys [direction player-id real-cell color]
+                                :or {:color :white}}]
   {:direction direction
    :type      :grenade
    :damage    5
@@ -24,13 +25,14 @@
    :arena-id arena-id
    :time-to-explode 90
    :time-to-drop 60
-   :cell (cells/real-cell-to-cell real-cell)})
+   :cell (cells/real-cell-to-cell real-cell)
+   :color color})
 
 (defn representation []
   \*)
 
 (defn explode-grenade [game grenade-id]
-  (let [{:keys [direction real-cell arena-id player-id]} (get-in game [:entities grenade-id])
+  (let [{:keys [direction real-cell arena-id player-id color]} (get-in game [:entities grenade-id])
         cell (cells/real-cell-to-cell real-cell)
         dimensions (get-in game [:arenas arena-id :dimensions])]
     (reduce
@@ -40,7 +42,7 @@
                                       bullet-cell
                                       (cells/change-cell bullet-cell (cells/dir-to-opposite direction)))]
           (if (cells/cell-valid? bullet-cell-corrected dimensions)
-            (let [bullet (mm-bullet/make-bullet arena-id :direction bullet-direction :player-id player-id :real-cell bullet-cell-corrected)
+            (let [bullet (mm-bullet/make-bullet arena-id :direction bullet-direction :player-id player-id :real-cell bullet-cell-corrected :color color)
                   bullet-id (g :entity-id)]
               (-> g
                 (entities/add-entity bullet)

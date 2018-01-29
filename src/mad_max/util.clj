@@ -3,6 +3,8 @@
 
 (def DEBUG true)
 
+(def directions [:up :down :left :right])
+
 (defn debug-print
   ([desc]
    (when DEBUG

@@ -5,13 +5,21 @@
             [mad-max.mm-bullet :as mm-bullet]
             [mad-max.util :as util]
             [mad-max.health-powerup :as mm-health-powerup]
-            [mad-max.grenade :as mm-grenade]))
+            [mad-max.grenade :as mm-grenade]
+            [tenlet.escape :as esc]))
 
 (def blank-lines-health-stats 2)
 (def blank-space-health-stats 2)
 
 (def min-width 80)
 (def min-height 30)
+
+(def default-color :white)
+
+(def code (memoize esc/code))
+
+(defn colorify [s color]
+  (str (code color) s (code default-color)))
 
 (defmulti representation (fn [entity] (get entity :type nil)))
 
@@ -55,7 +63,11 @@
               entity-ids (get entities-map cell)
               entities (map #(get all-entities %) entity-ids)]
           (recur
-            (reduce #(draw-at %1 cell %2) screen (map representation entities))
+            (reduce (fn [acc s]
+                      (let [[repr color] s]
+                        (draw-at acc cell (colorify repr color))))
+              screen
+              (map (juxt representation #(get % :color default-color)) entities))
             (rest cells)))))))
 
 (defn pretty-print-screen [screen]

@@ -15,7 +15,8 @@
                       :left {:x (- velocity)}
                       :right {:x velocity}})
 
-(defn make-bullet [arena-id & {:keys [direction player-id real-cell]}]
+(defn make-bullet [arena-id & {:keys [direction player-id real-cell color]
+                               :or {:color :white}}]
   {:direction direction
    :type      :bullet
    :damage    1
@@ -25,7 +26,8 @@
    :destructible? true
    :real-cell real-cell
    :arena-id arena-id
-   :cell (cells/real-cell-to-cell real-cell)})
+   :cell (cells/real-cell-to-cell real-cell)
+   :color color})
 
 (defn representation [bullet]
   (get dir-to-representation (:direction bullet)))
