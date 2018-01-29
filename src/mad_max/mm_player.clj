@@ -7,6 +7,10 @@
 
 (def dead-representation \`)
 
+(def great-dead ["Jim Morrisson" "Kurt Cobain" "Freddy Mercury" "Jimi Hendrix"
+                 "Amy Winehouse" "Brian Jones" "Janis Joplin" "Chuck Berry"
+                 "Barry White"])
+
 (defn make-player [name arena-id client-connection
                    & {:keys [health color direction]
                       :or   {health    10
@@ -23,7 +27,8 @@
    :grenades 3
    :arena-id arena-id
    :name name
-   :client-connection client-connection})
+   :client-connection client-connection
+   :dead-name (rand-nth great-dead)})
 
 (defn representation [player]
   (if (player :alive?)

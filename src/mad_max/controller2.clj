@@ -165,10 +165,13 @@
   (let [action-type (get action :type)]
     (case action-type
       :client-connect (add-client game (mm-client/make-client) (action :client-connection))
-      :client-disconnect (let [player-id (get-in game [:clients (action :client-connection) :player-id])]
-                           (-> game
-                             (remove-client (action :client-connection))
-                             (update-in [:entities player-id] mm-player/insta-death)))
+      ; FIXME make client-disconnect a clean separate function
+      :client-disconnect (let [player-id (get-in game [:clients (action :client-connection) :player-id])
+                               player-alive? (get-in game [:entities player-id :alive?] false)
+                               g (remove-client game (action :client-connection))]
+                           (if player-alive?
+                             (update-in g [:entities player-id] mm-player/insta-death)
+                             g))
       :make-player (make-player game (action :client-connection) (action :name))
       ;:print (println (action :message))
       :update-client (update-in game [:clients (action :client-connection)] merge (action :data))

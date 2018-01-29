@@ -19,7 +19,9 @@
 (def code (memoize esc/code))
 
 (defn colorify [s color]
-  (str (code color) s (code default-color)))
+  (if (nil? color)
+    (str (code default-color) s (code default-color))
+    (str (code color) s (code default-color))))
 
 (defmulti representation (fn [entity] (get entity :type nil)))
 
@@ -119,10 +121,9 @@
               (range string-width)))))
 
 (defn form-health-string [player]
-  (str (player :name) "'s HP: "
-       (if (> (player :health) 0)
-         (player :health)
-         "as dead as Jim Morisson")))
+  (if (> (player :health) 0)
+    (str (player :name) "'s HP: " (player :health))
+    (str (player :name) " is as dead as " (player :dead-name))))
 
 (defn add-health-stats [render arena all-entities]
   (dosync
