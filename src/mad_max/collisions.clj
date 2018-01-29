@@ -32,6 +32,21 @@
 (defmethod collision [:player :bullet] [game player-id bullet-id]
   (collision game bullet-id player-id))
 
+(defmethod collision [:grenade :player] [game grenade-id player-id]
+  (let [player (get-in game [:entities player-id])
+        grenade (get-in game [:entities grenade-id])]
+    (if (player :destructible?)
+      (->
+        game
+        (update-in [:entities player-id] mad-max.mm-player/take-a-hit (grenade :damage))
+        (mm-grenade/explode-grenade grenade-id)
+        (cells/remove-entity-from-cell grenade-id)
+        (entities/remove-entity grenade-id))
+      game)))
+
+(defmethod collision [:player :grenade] [game player-id grenade-id]
+  (collision game grenade-id player-id))
+
 ;(defmethod collision [:health-powerup :bullet] [health-powerup-id bullet-id])
 ;
 ;(defmethod collision [:bullet :health-powerup] [bullet-id health-powerup-id]
@@ -47,14 +62,6 @@
 ;
 ;(defmethod collision [:player :player] [player-id-1 player-id-2])
 ;
-;(defmethod collision [:grenade :player] [grenade-id player-id]
-;  (when ((@entities player-id) :destructible?)
-;    (take-a-hit player-id grenade-id)
-;    (explode-grenade grenade-id)
-;    (remove-entity grenade-id)))
-;
-;(defmethod collision [:player :grenade] [player-id grenade-id]
-;  (collision grenade-id player-id))
 ;
 ;(defmethod collision [:grenade :grenade] [grenade-id-1 grenade-id-2])
 ;(defmethod collision [:grenade :bullet] [grenade-id bullet-id])
