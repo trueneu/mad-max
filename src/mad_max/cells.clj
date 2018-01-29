@@ -6,6 +6,11 @@
                       :left [dec :x]
                       :right [inc :x]})
 
+(def dir-to-opposite {:up :down
+                      :down :up
+                      :left :right
+                      :right :left})
+
 (defn change-cell [cell direction]
   (update cell
           (second (dir-to-movement direction))
@@ -15,6 +20,8 @@
   (update-in game [:arenas arena-id :cells-with-possible-collisions] disj cell))
 
 (defn place-entity-at-cell-at-arena [game entity-id cell arena-id]
+  (util/debug-print "placing " entity-id)
+  (util/debug-print "  at cell " cell)
   (-> game
       (assoc-in [:entities entity-id :cell] cell)
       (update-in [:arenas arena-id :entities-map cell] conj entity-id)
@@ -27,6 +34,10 @@
 (defn remove-entity-from-cell [game entity-id]
   (let [arena-id (get-in game [:entities entity-id :arena-id])
         cell (get-in game [:entities entity-id :cell])]
+    (when (nil? cell)
+      (util/debug-print "got nil cell when removing!")
+      (util/debug-print "entity id: " entity-id)
+      (util/debug-print "entity: " (get-in game [:entities entity-id])))
     (-> game
         (assoc-in [:entities entity-id :old-cell] cell)
         (assoc-in [:entities entity-id :cell] {:x -1 :y -1})
@@ -34,3 +45,9 @@
 
 (defn real-cell-to-cell [cell]
   (util/mapvals cell #(int (+ 0.5 %))))
+
+(defn cell-valid? [cell dimensions]
+  (let [{:keys [width height]} dimensions
+        {:keys [x y]} cell]
+    (and (<= 1 x (- width 2))
+         (<= 1 y (- height 2)))))

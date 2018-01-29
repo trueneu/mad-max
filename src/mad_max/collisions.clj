@@ -3,7 +3,8 @@
             [mad-max.cells :as cells]
             [mad-max.entities :as entities]
             [clojure.math.combinatorics :as combo]
-            [mad-max.mm-player :as mm-player]))
+            [mad-max.mm-player :as mm-player]
+            [mad-max.grenade :as mm-grenade]))
 
 (defmulti collision (fn [game entity-id-1 entity-id-2]
                       (let [[entity-1 entity-2] (map (game :entities) [entity-id-1 entity-id-2])]
@@ -60,12 +61,14 @@
 ;(defmethod collision [:bullet :grenade] [bullet-id grenade-id])
 ;(defmethod collision [:grenade :health-powerup] [grenade-id health-powerup-id])
 ;(defmethod collision [:health-powerup :grenade] [health-powerup-id grenade-id])
-;(defmethod collision [:grenade :indestructible-wall] [grenade-id indestructible-wall-id]
-;  (explode-grenade grenade-id)
-;  (remove-entity grenade-id))
-;
-;(defmethod collision [:indestructible-wall :grenade] [indestructible-wall-id grenade-id]
-;  (collision grenade-id indestructible-wall-id))
+(defmethod collision [:grenade :indestructible-wall] [game grenade-id indestructible-wall-id]
+  (-> game
+    (mm-grenade/explode-grenade grenade-id)
+    (cells/remove-entity-from-cell grenade-id)
+    (entities/remove-entity grenade-id)))
+
+(defmethod collision [:indestructible-wall :grenade] [game indestructible-wall-id grenade-id]
+  (collision game grenade-id indestructible-wall-id))
 
 (defmethod collision :default [game _ _]
   game)

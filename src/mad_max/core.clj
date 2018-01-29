@@ -5,20 +5,8 @@
             [mad-max.controller2 :as controller2]
             [mad-max.actions :as actions]))
 
-;(defn start []
-;  (controller/initialize)
-;  (server/start-server))
-;
-;(defn stop []
-;  (server/stop-server @server/telnet-server)
-;  (controller/reset-all-state))
-;
 (defn stop-telnet-server []
   (server/stop-server @server/telnet-server))
-
-;(defn restart []
-;  (stop)
-;  (start))
 
 (defn start2 []
   (doto

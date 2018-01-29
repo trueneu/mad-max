@@ -14,23 +14,26 @@
 (defmethod heartbeat :default [game _]
   game)
 
-;(defmethod heartbeat :grenade [game grenade-id]
-;  (let [grenade (@entities grenade-id)
-;        {:keys [real-cell velocity arena-id cell]} grenade
-;        new-real-cell (merge-with + real-cell velocity)
-;        new-cell (mm-grenade/real-cell-to-cell new-real-cell)]
-;    (dosync
-;      (alter entities update grenade-id merge {:real-cell new-real-cell})
-;      (alter entities update-in [grenade-id :time-to-explode] dec)
-;      (alter entities update-in [grenade-id :time-to-drop] dec)
-;      (when (<= ((@entities grenade-id) :time-to-drop) 0)
-;        (entity-stop grenade-id))
-;      (if (<= ((@entities grenade-id) :time-to-explode) 0)
-;        (do
-;          (explode-grenade grenade-id)
-;          (remove-entity grenade-id))
-;        (move-from-cell-to-cell arena-id cell new-cell grenade-id)))))
-;
+(defmethod heartbeat :grenade [game grenade-id]
+  (let [grenade (get-in game [:entities grenade-id])
+        {:keys [real-cell velocity arena-id cell]} grenade
+        new-real-cell (merge-with + real-cell velocity)
+        new-cell (cells/real-cell-to-cell new-real-cell)]
+    (-> game
+      (update-in [:entities grenade-id] merge {:real-cell new-real-cell})
+      (update-in [:entities grenade-id :time-to-explode] dec)
+      (update-in [:entities grenade-id :time-to-drop] dec)
+      (cells/remove-entity-from-cell grenade-id)
+      ((fn [g] (if (pos? (get-in g [:entities grenade-id :time-to-drop]))
+                   g
+                   (entities/stop-entity g grenade-id))))
+      ((fn [g] (if (pos? (get-in g [:entities grenade-id :time-to-explode]))
+                   (do (-> g
+                           (cells/place-entity-at-cell grenade-id new-cell)))
+                   (do (-> g
+                           (mm-grenade/explode-grenade grenade-id)
+                           (entities/remove-entity grenade-id)))))))))
+
 (defmethod heartbeat :player [game player-id]
   (let [player (get-in game [:entities player-id])]
     (if-not (player :alive?)

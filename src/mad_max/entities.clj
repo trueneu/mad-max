@@ -19,3 +19,7 @@
     game
     (update :entities dissoc entity-id)))
 
+(defn stop-entity [game entity-id]
+  (->
+    game
+    (update-in [:entities entity-id :velocity] merge {:x 0 :y 0})))

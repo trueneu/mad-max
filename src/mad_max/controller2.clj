@@ -78,6 +78,19 @@
           (assoc-in [:entities player-id :direction] direction))
       game)))
 
+(defn make-grenade [game client-connection]
+  (let [{:keys [player-id arena-id]} (get-in game [:clients client-connection])
+        {:keys [direction color cell alive?]} (get-in game [:entities player-id])
+        grenade-cell (cells/change-cell cell direction)
+        grenade (mm-grenade/make-grenade arena-id :direction direction :player-id player-id :real-cell grenade-cell)
+        grenade-id (game :entity-id)]
+    (if alive?
+      (->
+        game
+        (entities/add-entity grenade)
+        (cells/place-entity-at-cell grenade-id grenade-cell))
+      game)))
+
 (defn make-bullet [game client-connection]
   (let [{:keys [player-id arena-id]} (get-in game [:clients client-connection])
         {:keys [direction color cell alive?]} (get-in game [:entities player-id])
@@ -91,7 +104,6 @@
         (cells/place-entity-at-cell bullet-id bullet-cell))
       game)))
 
-
 (defn dispatch-client-char-input [game client-connection input]
   (let [player-id (get-in game [:clients client-connection :player-id] nil)
         player (get-in game [:entities player-id] nil)]
@@ -103,6 +115,7 @@
                        (case action-type
                          :move-player (move-player game client-connection (action :direction))
                          :shoot (make-bullet game client-connection)
+                         :throw-grenade (make-grenade game client-connection)
                          game)))
         game)
       game)))
@@ -113,7 +126,7 @@
     nil))
 
 (defn make-arena [game]
-  (->> (arena/make-arena {:width 20 :height 10} (entities/special-entity-id game :indestructible-wall))
+  (->> (arena/make-arena {} (entities/special-entity-id game :indestructible-wall))
        (add-arena game)))
 
 (defn make-arena-if-needed [game]
