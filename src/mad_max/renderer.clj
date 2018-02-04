@@ -23,6 +23,17 @@
     (str (code default-color) s (code default-color))
     (str (code color) s (code default-color))))
 
+(defn escaped? [s]
+  (if (> (count s) 10)
+    (let [first-5 (subs s 0 5)
+          last-5 (subs s (- (count s) 5) (count s))]
+      (and
+        (= (subs first-5 0 2) (str (char 27) "["))
+        (= (subs first-5 4 5) "m")
+        (= (subs last-5 0 2) (str (char 27) "["))
+        (= (subs last-5 4 5) "m")))
+    false))
+
 (defmulti representation (fn [entity] (get entity :type nil)))
 
 (defmethod representation :player [entity]
@@ -105,12 +116,17 @@
 (defn screen-to-full-frame [screen]
   (apply str (map (partial apply str) screen)))
 
+(defn vectorize-string [s]
+  (if (escaped? s)
+    (vec (concat (list (subs s 0 6)) (seq (subs s 6 (- (count s) 6))) (list (subs s (- (count s) 6) (count s)))))
+    (vec s)))
+
 (defn place-string-at [screen coords s]
   (let [{:keys [x y]} coords
         width (count (screen 0))
         height (count screen)
-        string-width (count s)
-        string-vector (vec s)]
+        string-vector (vectorize-string s)
+        string-width (count string-vector)]
     (if (or (> y (dec height)) (> x (- (dec width) string-width)))
       (do
         (util/debug-print (str "Couldn't output string " s " at: " coords))
@@ -121,9 +137,10 @@
               (range string-width)))))
 
 (defn form-health-string [player]
-  (if (> (player :health) 0)
-    (str (player :name) "'s HP: " (player :health))
-    (str (player :name) " is as dead as " (player :dead-name))))
+  (let [color (player :color)]
+    (if (> (player :health) 0)
+      (colorify (str (player :name) "'s HP: " (player :health)) color)
+      (colorify (str (player :name) " is as dead as " (player :dead-name)) color))))
 
 (defn add-health-stats [render arena all-entities]
   (dosync
