@@ -32,7 +32,7 @@
   \*)
 
 (defn explode-grenade [game grenade-id]
-  (let [{:keys [direction real-cell arena-id player-id color]} (get-in game [:entities grenade-id])
+  (let [{:keys [direction real-cell arena-id player-id color shred-damage]} (get-in game [:entities grenade-id])
         cell (cells/real-cell-to-cell real-cell)
         dimensions (get-in game [:arenas arena-id :dimensions])]
     (reduce
@@ -42,11 +42,11 @@
                                       bullet-cell
                                       (cells/change-cell bullet-cell (cells/dir-to-opposite direction)))]
           (if (cells/cell-valid? bullet-cell-corrected dimensions)
-            (let [bullet (mm-bullet/make-bullet arena-id :direction bullet-direction :player-id player-id :real-cell bullet-cell-corrected :color color)
+            (let [bullet (mm-bullet/make-bullet arena-id :direction bullet-direction :player-id player-id :real-cell bullet-cell-corrected :color color :damage shred-damage)
                   bullet-id (g :entity-id)]
               (-> g
                 (entities/add-entity bullet)
                 (cells/place-entity-at-cell bullet-id bullet-cell-corrected)))
             g)))
       game
-      [:up :down :left :right])))
+      [:up :down :left :right :up-right :up-left :down-right :down-left])))

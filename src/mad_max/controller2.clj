@@ -20,6 +20,9 @@
 
 (def game-debug (atom nil))
 
+(def max-name-length 10)
+
+(def default-names ["Greg" "Ben" "Bob" "Bill" "Rose" "Alice" "Jane" "Ann"])
 (def player-colors [:black :red :green :yellow :blue :magenta :cyan :white])
 
 (def next-player-color (apply hash-map (concat (interleave player-colors (rest player-colors))
@@ -46,11 +49,13 @@
 
 (defn dispatch-client-line-input [game client-connection input]
   (case (get-in game [:clients client-connection :state])
-    :sent-name-prompt (do
+    :sent-name-prompt (let [name (if (empty? input)
+                                   (rand-nth default-names)
+                                   (subs input 0 (min max-name-length (count input))))]
                         (server/send-no-echo client-connection)
                         (actions/enqueue
                           {:type :make-player
-                           :name input
+                           :name name
                            :client-connection client-connection})
                         (assoc-in game [:clients client-connection :state] :in-action))
     game))
