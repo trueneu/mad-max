@@ -21,14 +21,14 @@
         new-real-cell (merge-with + real-cell velocity)
         new-cell (cells/real-cell-to-cell new-real-cell)]
     (-> game
-      (update-in [:entities grenade-id] merge {:real-cell new-real-cell})
-      (update-in [:entities grenade-id :time-to-explode] dec)
-      (update-in [:entities grenade-id :time-to-drop] dec)
-      (cells/remove-entity-from-cell grenade-id)
-      ((fn [g] (if (pos? (get-in g [:entities grenade-id :time-to-drop]))
+        (update-in [:entities grenade-id] merge {:real-cell new-real-cell})
+        (update-in [:entities grenade-id :time-to-explode] dec)
+        (update-in [:entities grenade-id :time-to-drop] dec)
+        (cells/remove-entity-from-cell grenade-id)
+        ((fn [g] (if (pos? (get-in g [:entities grenade-id :time-to-drop]))
                    g
                    (entities/stop-entity g grenade-id))))
-      ((fn [g] (if (pos? (get-in g [:entities grenade-id :time-to-explode]))
+        ((fn [g] (if (pos? (get-in g [:entities grenade-id :time-to-explode]))
                    (do (-> g
                            (cells/place-entity-at-cell grenade-id new-cell)))
                    (do (-> g

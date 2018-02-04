@@ -1,9 +1,9 @@
 (ns mad-max.core
   (:require
-            ;[mad-max.controller :as controller]
-            [mad-max.server :as server]
-            [mad-max.controller2 :as controller2]
-            [mad-max.actions :as actions]))
+    ;[mad-max.controller :as controller]
+    [mad-max.server :as server]
+    [mad-max.controller2 :as controller2]
+    [mad-max.actions :as actions]))
 
 (defn stop-telnet-server []
   (server/stop-server @server/telnet-server))

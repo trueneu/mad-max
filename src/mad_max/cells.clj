@@ -1,26 +1,22 @@
 (ns mad-max.cells
   (:require [mad-max.util :as util]))
 
-;(def dir-to-movement {:up [dec :y]
-;                      :down [inc :y]
-;                      :left [dec :x]
-;                      :right [inc :x]})
-(def dir-to-movement {:up [[dec :y]]
-                      :down [[inc :y]]
-                      :left [[dec :x]]
-                      :right [[inc :x]]
-                      :up-right [[inc :x] [dec :y]]
-                      :down-left [[inc :y] [dec :x]]
-                      :up-left [[dec :x] [dec :y]]
+(def dir-to-movement {:up         [[dec :y]]
+                      :down       [[inc :y]]
+                      :left       [[dec :x]]
+                      :right      [[inc :x]]
+                      :up-right   [[inc :x] [dec :y]]
+                      :down-left  [[inc :y] [dec :x]]
+                      :up-left    [[dec :x] [dec :y]]
                       :down-right [[inc :y] [inc :x]]})
 
-(def dir-to-opposite {:up :down
-                      :down :up
-                      :left :right
-                      :right :left
-                      :up-right :down-left
-                      :down-left :up-right
-                      :up-left :down-right
+(def dir-to-opposite {:up         :down
+                      :down       :up
+                      :left       :right
+                      :right      :left
+                      :up-right   :down-left
+                      :down-left  :up-right
+                      :up-left    :down-right
                       :down-right :up-left})
 
 (defn change-cell [cell direction]
@@ -28,9 +24,6 @@
             (update acc x f))
           cell
           (dir-to-movement direction)))
-  ;(update cell
-  ;        (second (dir-to-movement direction))
-  ;        (first (dir-to-movement direction))))
 
 (defn remove-cell-with-possible-collision [game arena-id cell]
   (update-in game [:arenas arena-id :cells-with-possible-collisions] disj cell))

@@ -47,7 +47,7 @@
   (try
     (vec (for [j (range h)]
            (vec (for [i (range w)]
-                     " "))))
+                  " "))))
     (catch Exception e (println "Exception " e " w: " w " h: " h))))
 
 (defn draw-at [screen {:keys [x y]} char]
@@ -68,8 +68,8 @@
             (reduce (fn [acc s]
                       (let [[repr color] s]
                         (draw-at acc cell (colorify repr color))))
-              screen
-              (map (juxt representation #(get % :color default-color)) entities))
+                    screen
+                    (map (juxt representation #(get % :color default-color)) entities))
             (rest cells)))))))
 
 (defn pretty-print-screen [screen]
@@ -107,7 +107,7 @@
 
 (defn place-string-at [screen coords s]
   (let [{:keys [x y]} coords
-        width  (count (screen 0))
+        width (count (screen 0))
         height (count screen)
         string-width (count s)
         string-vector (vec s)]
@@ -140,4 +140,4 @@
 (defn render-arena [arena all-entities]
   (let [render (render-map arena all-entities)]
     (-> render (resize-screen-height min-height) (resize-screen-width min-width)
-      (add-health-stats arena all-entities))))
+        (add-health-stats arena all-entities))))

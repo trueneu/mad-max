@@ -16,19 +16,19 @@
                       :or   {health    10
                              color     :black
                              direction :up}}]
-  {:health    health
-   :color     color
-   :direction direction
-   :type      :player
-   :passable? true
-   :destructible? true
-   :alive? true
-   :time-to-vanish 500
-   :grenades 3
-   :arena-id arena-id
-   :name name
+  {:health            health
+   :color             color
+   :direction         direction
+   :type              :player
+   :passable?         true
+   :destructible?     true
+   :alive?            true
+   :time-to-vanish    500
+   :grenades          3
+   :arena-id          arena-id
+   :name              name
    :client-connection client-connection
-   :dead-name (rand-nth great-dead)})
+   :dead-name         (rand-nth great-dead)})
 
 (defn representation [player]
   (if (player :alive?)

@@ -6,27 +6,27 @@
 
 (def velocity 0.15)
 
-(def dir-to-velocity {:up {:y (- velocity)}
-                      :down {:y velocity}
-                      :left {:x (- velocity)}
+(def dir-to-velocity {:up    {:y (- velocity)}
+                      :down  {:y velocity}
+                      :left  {:x (- velocity)}
                       :right {:x velocity}})
 
 (defn make-grenade [arena-id & {:keys [direction player-id real-cell color]
-                                :or {:color :white}}]
-  {:direction direction
-   :type      :grenade
-   :damage    5
-   :shred-damage 2
-   :passable? true
-   :player-id player-id
-   :velocity (merge {:x 0 :y 0} (dir-to-velocity direction))
-   :destructible? true
-   :real-cell real-cell
-   :arena-id arena-id
+                                :or   {:color :white}}]
+  {:direction       direction
+   :type            :grenade
+   :damage          5
+   :shred-damage    2
+   :passable?       true
+   :player-id       player-id
+   :velocity        (merge {:x 0 :y 0} (dir-to-velocity direction))
+   :destructible?   true
+   :real-cell       real-cell
+   :arena-id        arena-id
    :time-to-explode 90
-   :time-to-drop 60
-   :cell (cells/real-cell-to-cell real-cell)
-   :color color})
+   :time-to-drop    60
+   :cell            (cells/real-cell-to-cell real-cell)
+   :color           color})
 
 (defn representation []
   \*)
@@ -45,8 +45,8 @@
             (let [bullet (mm-bullet/make-bullet arena-id :direction bullet-direction :player-id player-id :real-cell bullet-cell-corrected :color color :damage shred-damage)
                   bullet-id (g :entity-id)]
               (-> g
-                (entities/add-entity bullet)
-                (cells/place-entity-at-cell bullet-id bullet-cell-corrected)))
+                  (entities/add-entity bullet)
+                  (cells/place-entity-at-cell bullet-id bullet-cell-corrected)))
             g)))
       game
       [:up :down :left :right :up-right :up-left :down-right :down-left])))

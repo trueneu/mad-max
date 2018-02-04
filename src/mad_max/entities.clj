@@ -3,8 +3,8 @@
 
 (defn add-entity [game entity]
   (-> game
-    (assoc-in [:entities (game :entity-id)] entity)
-    (update :entity-id inc)))
+      (assoc-in [:entities (game :entity-id)] entity)
+      (update :entity-id inc)))
 
 (defn add-special-entity [game entity]
   (-> game

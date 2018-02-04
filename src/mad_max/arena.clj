@@ -17,16 +17,16 @@
               {:x (dec width) :y j}))))
 
 (defn make-arena [dimensions ind-wall-id]
-  (let [empty-arena   {:dimensions (merge {:width 30} {:height 20} dimensions)
-                       :entities-map {}
-                       :clients #{}
-                       :player-ids []
-                       :cells-with-possible-collisions #{}
-                       :last-used-player-color :black}
+  (let [empty-arena {:dimensions                     (merge {:width 30} {:height 20} dimensions)
+                     :entities-map                   {}
+                     :clients                        #{}
+                     :player-ids                     []
+                     :cells-with-possible-collisions #{}
+                     :last-used-player-color         :black}
         initialized-map-arena (reduce #(assoc-in %1 [:entities-map %2] #{}) empty-arena
-                                (for [i (range (get-in empty-arena [:dimensions :width]))
-                                      j (range (get-in empty-arena [:dimensions :height]))]
-                                  {:x i :y j}))]
+                                      (for [i (range (get-in empty-arena [:dimensions :width]))
+                                            j (range (get-in empty-arena [:dimensions :height]))]
+                                        {:x i :y j}))]
     (reduce #(update-in %1 [:entities-map %2] conj ind-wall-id)
             initialized-map-arena
             (arena-indestructible-walls-cells initialized-map-arena))))
@@ -37,6 +37,6 @@
 (defn choose-unoccupied-cell [arena]
   (let [entities-map (arena :entities-map)
         unoccupied-cells (map first
-                           (filter #(empty? (second %))
-                                    entities-map))]
+                              (filter #(empty? (second %))
+                                      entities-map))]
     (rand-nth unoccupied-cells)))

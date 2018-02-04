@@ -6,11 +6,11 @@
   (zero? (rand-int health-powerup-inverse-probability)))
 
 (defn make-health-powerup [arena-id]
-  {:type      :health-powerup
-   :passable? true
+  {:type          :health-powerup
+   :passable?     true
    :destructible? false
-   :arena-id arena-id
-   :heal 3})
+   :arena-id      arena-id
+   :heal          3})
 
 (defn representation []
   \+)

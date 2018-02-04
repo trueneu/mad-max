@@ -30,17 +30,17 @@
 
 (defn add-arena [game arena]
   (-> game
-    (assoc-in [:arenas (game :arena-id)] arena)
-    (update :arena-id inc)))
+      (assoc-in [:arenas (game :arena-id)] arena)
+      (update :arena-id inc)))
 
 (defn add-client [game client client-connection]
   (-> game
-    (assoc-in [:clients client-connection] client)))
+      (assoc-in [:clients client-connection] client)))
 
 (defn remove-client [game client-connection]
   (util/debug-print "Rmvng client")
   (-> game
-    (update :clients dissoc client-connection)))
+      (update :clients dissoc client-connection)))
 
 (defn init-game [game]
   (let [ind-wall (ind-wall/make-indestructible-wall)
@@ -54,8 +54,8 @@
                                    (subs input 0 (min max-name-length (count input))))]
                         (server/send-no-echo client-connection)
                         (actions/enqueue
-                          {:type :make-player
-                           :name name
+                          {:type              :make-player
+                           :name              name
                            :client-connection client-connection})
                         (assoc-in game [:clients client-connection :state] :in-action))
     game))
@@ -63,10 +63,10 @@
 (def char-to-action-and-command
   (merge
     (apply hash-map
-      (interleave
-        [:arrow-up :arrow-down :arrow-left :arrow-right]
-        (map (partial hash-map :type :move-player :direction)
-             [:up :down :left :right])))
+           (interleave
+             [:arrow-up :arrow-down :arrow-left :arrow-right]
+             (map (partial hash-map :type :move-player :direction)
+                  [:up :down :left :right])))
     {\space {:type :shoot}}
     {\z {:type :throw-grenade}}))
 
@@ -164,7 +164,7 @@
         (update-in [:arenas chosen-arena-id :clients] conj client-connection)
         (update-in [:arenas chosen-arena-id] assoc :last-used-player-color player-color)
         (update-in [:clients client-connection] merge {:player-id player-id
-                                                       :arena-id chosen-arena-id}))))
+                                                       :arena-id  chosen-arena-id}))))
 
 (defn dispatch-action [game action]
   (let [action-type (get action :type)]
@@ -245,14 +245,14 @@
     (fn [g [client-connection client]]
       (case (client :state)
         :just-connected (do
-                         (server/send-full-frame client-connection "Enter your name to continue: ")
-                         (update-in g [:clients client-connection] assoc :state :sent-name-prompt))
+                          (server/send-full-frame client-connection "Enter your name to continue: ")
+                          (update-in g [:clients client-connection] assoc :state :sent-name-prompt))
         :sent-name-prompt g
         :in-action (do
                      (send-arena-render! g client-connection)
                      g)
         (do (util/debug-print "Unknown client state: " (client :state))
-          g)))
+            g)))
     game (game :clients)))
 
 (defn main-loop []

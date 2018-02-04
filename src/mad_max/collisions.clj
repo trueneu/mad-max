@@ -63,7 +63,7 @@
         (entities/remove-entity health-powerup-id))
       game)))
 
-(defmethod collision [:player :health-powerup ] [game player-id health-powerup-id]
+(defmethod collision [:player :health-powerup] [game player-id health-powerup-id]
   (collision game health-powerup-id player-id))
 ;
 ;(defmethod collision [:bullet :bullet] [bullet-id-1 bullet-id-2])
@@ -78,9 +78,9 @@
 ;(defmethod collision [:health-powerup :grenade] [health-powerup-id grenade-id])
 (defmethod collision [:grenade :indestructible-wall] [game grenade-id indestructible-wall-id]
   (-> game
-    (mm-grenade/explode-grenade grenade-id)
-    (cells/remove-entity-from-cell grenade-id)
-    (entities/remove-entity grenade-id)))
+      (mm-grenade/explode-grenade grenade-id)
+      (cells/remove-entity-from-cell grenade-id)
+      (entities/remove-entity grenade-id)))
 
 (defmethod collision [:indestructible-wall :grenade] [game indestructible-wall-id grenade-id]
   (collision game grenade-id indestructible-wall-id))
