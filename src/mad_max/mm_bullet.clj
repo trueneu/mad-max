@@ -24,8 +24,8 @@
                       :down-right {:y velocity :x velocity}})
 
 (defn make-bullet [arena-id & {:keys [direction player-id real-cell color damage]
-                               :or   {:color  :white
-                                      :damage 1}}]
+                               :or   {color  :white
+                                      damage 1}}]
   {:direction     direction
    :type          :bullet
    :damage        damage
