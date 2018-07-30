@@ -47,11 +47,6 @@
 (defmethod collision [:player :grenade] [game player-id grenade-id]
   (collision game grenade-id player-id))
 
-;(defmethod collision [:health-powerup :bullet] [health-powerup-id bullet-id])
-;
-;(defmethod collision [:bullet :health-powerup] [bullet-id health-powerup-id]
-;  (collision health-powerup-id bullet-id))
-;
 (defmethod collision [:health-powerup :player] [game health-powerup-id player-id]
   (let [player (get-in game [:entities player-id])
         health-powerup (get-in game [:entities health-powerup-id])]
@@ -65,17 +60,7 @@
 
 (defmethod collision [:player :health-powerup] [game player-id health-powerup-id]
   (collision game health-powerup-id player-id))
-;
-;(defmethod collision [:bullet :bullet] [bullet-id-1 bullet-id-2])
-;
-;(defmethod collision [:player :player] [player-id-1 player-id-2])
-;
-;
-;(defmethod collision [:grenade :grenade] [grenade-id-1 grenade-id-2])
-;(defmethod collision [:grenade :bullet] [grenade-id bullet-id])
-;(defmethod collision [:bullet :grenade] [bullet-id grenade-id])
-;(defmethod collision [:grenade :health-powerup] [grenade-id health-powerup-id])
-;(defmethod collision [:health-powerup :grenade] [health-powerup-id grenade-id])
+
 (defmethod collision [:grenade :indestructible-wall] [game grenade-id indestructible-wall-id]
   (-> game
       (mm-grenade/explode-grenade grenade-id)
@@ -94,9 +79,6 @@
 (defn process-collision [game arena-id cell]
   (let [entitiy-ids-at-cell (get-in game [:arenas arena-id :entities-map cell])
         collision-map (combo/combinations entitiy-ids-at-cell 2)]
-    ;(util/debug-print "collision at cell: " cell)
-    ;(util/debug-print "entities: " entitiy-ids-at-cell)
-    ;(util/debug-print "map: " collision-map)
     (reduce
       (fn [g [entity-id1 entity-id2]]
         (let [[entity-1 entity-2] (map (g :entities) [entity-id1 entity-id2])]
